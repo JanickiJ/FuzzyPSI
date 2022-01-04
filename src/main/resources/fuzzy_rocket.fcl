@@ -1,0 +1,120 @@
+// Block definition (there may be more than one block per file)
+FUNCTION_BLOCK
+
+VAR_INPUT
+x : REAL;
+y : REAL;
+vy : REAL;
+vx : REAL;
+ax : REAL;
+ay : REAL;
+END_VAR
+VAR_OUTPUT
+axChange : REAL;
+ayChange : REAL;
+END_VAR
+
+FUZZIFY x
+TERM far_left := (-1000, 1) (-300, 1) (-250,0);
+TERM close_left := (-300,0) (-250, 1) (-50, 1)(-40, 0);
+TERM stop := (-40,0) (-30,1) (30,1) (40,0);
+TERM close_right := (40,0) (50,1) (200, 1) (300, 0);
+TERM far_right := (300, 0) (350, 1) (1000, 1);
+END_FUZZIFY
+
+
+FUZZIFY y
+TERM stop := (-1,1) (3,1) (10,0);
+TERM close := (3,0) (200, 1) (400, 0);
+TERM far := (200, 0) (400, 1) (1000, 1);
+END_FUZZIFY
+
+FUZZIFY vy
+TERM very_slow := (0, 1) (3, 1) (4, 0);
+TERM slow := (3, 0) (4, 1) (9, 1) (12, 0);
+TERM fast := (9, 0) (12, 1) (23,1);
+END_FUZZIFY
+
+
+FUZZIFY vx
+TERM fast_left := (-7, 1) (-6,0);
+TERM slow_left := (-7, 0) (-6, 1) (-4, 1) (-3, 0);
+TERM very_slow_left := (-4, 0) (-3, 1) (-1.25, 1) (1, 0);
+TERM stop := (-1.25, 0) (-1,1) (1,1) (1.25, 0);
+TERM very_slow_right := (1, 0) (1.25, 1) (3, 1) (4, 0);
+TERM slow_right := (3, 0) (4, 1) (6, 1) (7, 0);
+TERM fast_right := (6, 0) (7, 1);
+END_FUZZIFY
+
+FUZZIFY ax
+TERM plus_left := (-5, 1) (-2, 1) (-0.2, 0);
+TERM neutral := (-0.5,0) (0,1) (0.5,0);
+TERM plus_right := (0.2,0) (2, 1) (5,1);
+END_FUZZIFY
+
+FUZZIFY ay
+TERM fast_break := (-5, 1) (-2, 1) (-0.5, 0);
+TERM slow_break := (-1, 0) (-0.5, 1) (-0.15, 1) (0, 0);
+TERM neutral := (-0.15,0) (0,1) (0.15,0);
+TERM plus := (0.10, 0) (1, 1) (5,1);
+END_FUZZIFY
+
+
+
+DEFUZZIFY axChange
+TERM fast_acceleration_left := (-1, 1) (-0.75, 1) (-0.5, 0);
+TERM acceleration_left := (-0.75, 0) (-0.4, 1) (-0.15, 0);
+TERM neutral := (-0.25,0) (0,1) (0.25,0);
+TERM acceleration_right := (0.15,0) (0.4, 1) (0.75,0);
+TERM fast_acceleration_right := (0.5,0) (0.75, 1) (1,1);
+METHOD : COG;
+DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY ayChange
+TERM fast_break := (-3, 1) (-2, 1) (-1, 0);
+TERM slow_break := (-1.5, 0) (-0.5, 1) (-0.15, 1) (0, 0);
+TERM neutral := (-0.15,0) (0,1) (0.15,0);
+TERM plus := (0.10, 0) (1, 1) (3,1);
+METHOD : COG;
+DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK first
+AND: MIN;
+ACT: MIN;
+
+RULE 0: IF y IS far THEN ayChange IS plus;
+RULE 1: IF y IS close AND vy IS fast AND ay IS plus THEN ayChange IS fast_break;
+RULE 2: IF y IS close AND vy IS fast AND ay IS fast_break THEN ayChange IS fast_break;
+RULE 3: IF y IS close AND vy IS slow AND ay IS fast_break THEN ayChange IS slow_break;
+RULE 4: IF y IS close AND vy IS slow AND ay IS slow_break THEN ayChange IS slow_break;
+RULE 5: IF y IS close AND vy IS very_slow AND ay IS slow_break THEN ayChange IS neutral;
+RULE 6: IF y IS stop AND vy IS very_slow AND ay IS neutral THEN ayChange IS neutral;
+
+RULE 7: IF x IS stop AND vx IS stop THEN axChange IS neutral;
+
+RULE 8: IF x IS stop AND vx IS fast_right THEN axChange IS fast_acceleration_left;
+RULE 9: IF x IS stop AND vx IS slow_right THEN axChange IS acceleration_left;
+RULE 10: IF x IS stop AND vx IS very_slow_right THEN axChange IS acceleration_left;
+
+RULE 11: IF x IS stop AND vx IS fast_left THEN axChange IS fast_acceleration_right;
+RULE 12: IF x IS stop AND vx IS slow_left THEN axChange IS acceleration_right;
+RULE 13: IF x IS stop AND vx IS very_slow_left THEN axChange IS acceleration_right;
+
+RULE 14: IF x IS close_left AND vx IS fast_right THEN axChange IS fast_acceleration_left;
+RULE 15: IF x IS close_left AND vx IS slow_right THEN axChange IS fast_acceleration_left;
+RULE 16: IF x IS close_left AND vx IS very_slow_right THEN axChange IS acceleration_left;
+RULE 17: IF x IS close_left AND vx IS stop THEN axChange IS acceleration_left;
+
+RULE 18: IF x IS close_right AND vx IS fast_left THEN axChange IS fast_acceleration_right;
+RULE 19: IF x IS close_right AND vx IS slow_left THEN axChange IS fast_acceleration_right;
+RULE 20: IF x IS close_right AND vx IS very_slow_left THEN axChange IS acceleration_right;
+RULE 21: IF x IS close_right AND vx IS stop THEN axChange IS acceleration_right;
+
+RULE 22: IF x IS far_left THEN axChange IS acceleration_left;
+RULE 23: IF x IS far_right THEN axChange IS acceleration_right;
+
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

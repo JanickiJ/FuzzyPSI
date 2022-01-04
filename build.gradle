@@ -1,0 +1,48 @@
+plugins {
+    id 'java'
+    id 'org.openjfx.javafxplugin' version '0.0.9'
+}
+
+group 'org.example'
+version '1.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://repository.ow2.org/nexus/content/repositories/public/"
+    }
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+jar{
+    manifest{
+        attributes 'Main-Class': 'Main'
+    }
+    from{
+        exclude '**/module-info.class'
+        configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+javafx {
+    version = '12'
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
+dependencies {
+    implementation group: 'net.sourceforge.jFuzzyLogic', name: 'jFuzzyLogic', version: '1.+'
+}
+
+task runWithExecJarExecutable(type: Exec){
+    dependsOn jar
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", jar.archiveFile.get()
+}
